@@ -7,9 +7,8 @@ Este projeto é a migração de um sistema legado feito em Java 8 com PostgreSQL
 ## Sumário
 
 - [O que você precisa instalar](#o-que-você-precisa-instalar)
-- [Como rodar com Docker (recomendado)](#como-rodar-com-docker-recomendado)
-- [Como rodar pelo terminal (sem Docker)](#como-rodar-pelo-terminal-sem-docker)
-- [Endereços](#endereços)
+- [Como rodar o projeto](#como-rodar-o-projeto)
+- [Front e API: cada um tem seu endereço](#front-e-api-cada-um-tem-seu-endereço)
 - [Regras de negócio](#regras-de-negócio)
 - [Rotas da API](#rotas-da-api)
 - [Formato das respostas](#formato-das-respostas)
@@ -18,28 +17,19 @@ Este projeto é a migração de um sistema legado feito em Java 8 com PostgreSQL
 
 ## O que você precisa instalar
 
-**Para rodar com Docker (recomendado):**
-
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/). Ao abrir, aguarde aparecer **Engine running** na parte inferior da janela.
 
-**Para rodar pelo terminal (sem Docker):**
+Para testar a API, também é necessário um cliente HTTP. Use o [Thunder Client](https://marketplace.visualstudio.com/items?itemName=rangav.vscode-thunder-client) (extensão do VS Code), Insomnia ou Postman. Ele é necessário para os métodos POST, PUT e DELETE.
 
-- Python 3.13 ou superior
-- Para o frontend, qualquer servidor de arquivos estáticos. Este guia usa o `http.server`, que já vem com o Python.
+## Como rodar o projeto
 
-**Para testar a API (opcional, mas necessário para POST, PUT e DELETE):**
-
-- [Thunder Client](https://marketplace.visualstudio.com/items?itemName=rangav.vscode-thunder-client) (extensão do VS Code), Insomnia ou Postman.
-
-## Como rodar com Docker (recomendado)
-
-Na raiz do projeto, onde está o arquivo `docker-compose.yml`:
+Na raiz do projeto, onde está o arquivo `docker-compose.yml`, abra o terminal e rode:
 
 ```
 docker compose up --build -d
 ```
 
-Na primeira execução, o Docker baixa a imagem do Python e do Nginx, instala o Django e cria o banco. Isso pode levar alguns minutos. Nas próximas, o comando é mais rápido.
+Na primeira execução, o Docker baixa as imagens do Python e do Nginx, instala o Django e cria o banco. Isso pode levar alguns minutos. Nas próximas, o comando é mais rápido.
 
 Verifique se os dois serviços estão rodando:
 
@@ -49,12 +39,13 @@ docker compose ps
 
 Você deve ver `backend` e `frontend` com o status `running`.
 
-Depois, abra o frontend em http://localhost:3000.
+Depois, abra o sistema no navegador em **http://localhost:3000**. Essa é a tela que você usa no dia a dia.
 
 ### Comandos do dia a dia
 
 | Ação | Comando |
 |---|---|
+| Subir os serviços (após alterar o código) | `docker compose up --build -d` |
 | Ver os logs do backend | `docker compose logs -f backend` |
 | Parar os serviços (mantém os dados) | `docker compose stop` |
 | Iniciar de novo | `docker compose start` |
@@ -64,48 +55,23 @@ Depois, abra o frontend em http://localhost:3000.
 
 Os dados ficam em um volume do Docker (`sqlite_data`). Eles continuam disponíveis depois de `stop`, `restart` e `down`. Só são apagados com `down -v`.
 
-Depois de alterar o código do backend, reconstrua a imagem:
+## Front e API: cada um tem seu endereço
 
-```
-docker compose up --build -d
-```
+O projeto tem duas partes que rodam em endereços diferentes. Elas se comunicam, mas têm papéis distintos.
 
-## Como rodar pelo terminal (sem Docker)
+| Parte | Endereço | O que é | Quem usa |
+|---|---|---|---|
+| **Front** (tela) | http://localhost:3000 | Páginas HTML, CSS e JavaScript. É a interface do sistema. | Você, no navegador |
+| **API** (backend) | http://localhost:8080/api/ | Dados em JSON. Não tem tela. | O JavaScript do front, e você nos testes |
 
-Esse caminho é útil para desenvolvimento. Use o terminal em duas janelas: uma para o backend e outra para o frontend.
+Na prática:
 
-**Backend (janela 1):**
+- Para **usar o sistema**, abra **http://localhost:3000**. Não use o endereço da API para navegar.
+- O front chama a API nos bastidores. Quando você cadastra um cliente na tela, o JavaScript envia uma requisição para `http://localhost:8080/api/clientes`.
+- Se você abrir **http://localhost:8080/api/vagas** no navegador, verá só os dados em JSON, sem nenhuma tela. Isso é esperado.
+- Os dois endereços precisam estar rodando ao mesmo tempo. Se o backend parar, a tela carrega, mas as ações falham.
 
-```
-cd backend-django
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver 8080
-```
-
-No Linux ou macOS, para ativar a venv, use `source venv/bin/activate`.
-
-O backend fica disponível em http://localhost:8080/api/.
-
-**Frontend (janela 2):**
-
-```
-cd frontend
-python -m http.server 3000
-```
-
-O frontend fica disponível em http://localhost:3000.
-
-O frontend chama a API em `http://localhost:8080`, configurado em `frontend/js/api.js`. Por isso, o backend precisa estar rodando na porta 8080.
-
-## Endereços
-
-| Serviço | Endereço |
-|---|---|
-| Frontend | http://localhost:3000 |
-| API | http://localhost:8080/api/ |
+O endereço da API fica configurado em `frontend/js/api.js`, na constante `API_BASE`. Ele aponta para `http://localhost:8080`.
 
 ## Regras de negócio
 
@@ -118,7 +84,9 @@ O frontend chama a API em `http://localhost:8080`, configurado em `frontend/js/a
 
 ## Rotas da API
 
-Todas as rotas começam com `/api/`. Nenhuma rota termina com barra (`/`).
+As rotas são do **backend**, acessadas em `http://localhost:8080`. Todas começam com `/api/`, e nenhuma termina com barra (`/`).
+
+Estas rotas não são páginas. Elas respondem com JSON e são chamadas pelo front ou por um cliente HTTP.
 
 ### Dashboard
 
@@ -168,7 +136,7 @@ Para qualquer método que não esteja listado em uma rota, a API responde 405. P
 
 ## Formato das respostas
 
-Todas as respostas são JSON.
+Todas as respostas da API são JSON.
 
 **Sucesso:** o corpo traz o recurso ou uma mensagem.
 
@@ -221,7 +189,9 @@ Enquanto a permanência estiver aberta, `dataHoraSaida` e `valorTotal` são `nul
 
 ## Testando a API
 
-Com o projeto rodando, você pode testar as rotas de `GET` direto no navegador. Os demais métodos precisam de um cliente como o Thunder Client.
+Os testes da API são feitos no endereço do **backend**, `http://localhost:8080`, e não no front.
+
+Você pode testar as rotas de `GET` direto no navegador. Os demais métodos precisam de um cliente como o Thunder Client.
 
 Use este roteiro, nesta ordem:
 
@@ -231,7 +201,7 @@ Use este roteiro, nesta ordem:
 4. `POST http://localhost:8080/api/permanencias/entrada` com `{"veiculoId": 1, "vagaId": 1}`: deve retornar 201, e a vaga A01 passa a `OCUPADA`.
 5. `POST http://localhost:8080/api/permanencias/entrada` com o mesmo corpo: deve retornar 409.
 6. `PUT http://localhost:8080/api/permanencias/1/saida`: deve retornar 200 com `valorTotal`.
-7. Abra http://localhost:3000 e confira se o frontend carrega as vagas, os clientes e as permanências.
+7. Abra **http://localhost:3000** e confira se o front mostra as vagas, os clientes e as permanências cadastrados nos passos anteriores.
 
 ## Estrutura do projeto
 
