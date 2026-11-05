@@ -1,0 +1,22 @@
+# Ambiente virtual Python
+venv/
+.venv/
+env/
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Banco de dados local (criado pelo migrate, nunca versionar)
+db.sqlite3
+
+# Variáveis de ambiente e segredos
+.env
+
+# Editores e IDEs
+.vscode/
+.idea/
+
+# Sistema operacional
+Thumbs.db
+.DS_Store
